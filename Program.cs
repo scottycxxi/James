@@ -226,7 +226,7 @@ namespace James
             {
                 Console.WriteLine();
                 Console.WriteLine($"Round {currentVerseCount + 1} of {totalVerseCount} - {bookName} {verse.ChapterNum}:{verse.VerseNum}");
-                if (includeContext && gameMode != GameMode.gm100)
+                if (includeContext && emergencyFixNumber > 4)
                     Console.WriteLine(verse.GetPrevVerse(bookName));
                 verse.GetQuizVerse(randy, gameMode, hardMode,
                                    out string[] quizWords, out bool[] quizzedWords, out int quizWordCount);
