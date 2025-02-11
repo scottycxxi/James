@@ -18,6 +18,11 @@ namespace James
         gm0 = 0
     }
 
+    enum BetterGameMode
+    {
+        bgm1 = 1
+    }
+
     internal class Verse
     {
         private readonly string fullVerse;
