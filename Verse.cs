@@ -20,7 +20,9 @@ namespace James
 
     enum BetterGameMode
     {
-        bgm1 = 1
+        bgm1 = 1,
+        bgm2 = 2,
+        bgm3 = 3
     }
 
     internal class Verse
