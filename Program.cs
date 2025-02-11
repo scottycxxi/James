@@ -3,6 +3,8 @@ Verse.GetQuizVerse based on game mode
 implement hard mode
 count guesses and answers better based on game mode (shouldn't score for typing a given word) 
 
+make a readme, cuz it's good to
+
 long term
 store scores long term
 keep score on rounds with no help
