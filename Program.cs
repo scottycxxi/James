@@ -219,6 +219,7 @@ namespace James
             Random randy = new();
 
             int verseScoreTotal = 0;
+            int emergencyFixNumber = 5;
             int correctGuessesTotal = 0;
             int correctAnswersTotal = 0;
             foreach (Verse verse in versesToTest)
