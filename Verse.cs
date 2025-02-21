@@ -7,23 +7,6 @@ using System.Threading.Tasks;
 
 namespace James
 {
-    enum GameMode
-    {
-        //75 means 75% of words are provided and 25% are required
-        //0 is the hardest, beacuse all words are required
-        gm100 = 100,
-        gm75 = 75,
-        gm50 = 50,
-        gm25 = 5,
-        gm0 = 0
-    }
-
-    enum BetterGameMode
-    {
-        bgm1 = 1,
-        bgm2 = 2,
-        bgm3 = 3
-    }
 
     internal class Verse
     {
