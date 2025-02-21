@@ -19,6 +19,8 @@ game modes
 7 - random, prior and following verse context, 30% help
 8 - random, prior and following verse context, 0% help (no word lengths)
 9 - random, no context, ball out
+
+one more comment just to test pushing
 */
 namespace James
 {
