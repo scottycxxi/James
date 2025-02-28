@@ -25,7 +25,8 @@ Chapter 1
 23 For if anyone is a hearer of the word and not a doer, he is like a man who looks intently at his natural face in a mirror. 
 24 For he looks at himself and goes away and at once forgets what he was like. 
 25 But the one who looks into the perfect law, the law of liberty, and perseveres, being no hearer who forgets but a doer who acts, he will be blessed in his doing.
-26 If anyone thinks he is religious and does not bridle his tongue but deceives his heart, this person's religion is worthless. 27 Religion that is pure and undefiled before God the Father is this: to visit orphans and widows in their affliction, and to keep oneself unstained from the world.
+26 If anyone thinks he is religious and does not bridle his tongue but deceives his heart, this person's religion is worthless. 
+27 Religion that is pure and undefiled before God the Father is this: to visit orphans and widows in their affliction, and to keep oneself unstained from the world.
 Chapter 2
 1 My brothers, show no partiality as you hold the faith in our Lord Jesus Christ, the Lord of glory. 
 2 For if a man wearing a gold ring and fine clothing comes into your assembly, and a poor man in shabby clothing also comes in, 
@@ -111,3 +112,10 @@ Chapter 5
 18 Then he prayed again, and heaven gave rain, and the earth bore its fruit.
 19 My brothers, if anyone among you wanders from the truth and someone brings him back, 
 20 let him know that whoever brings back a sinner from his wandering will save his soul from death and will cover a multitude of sins.
+Chapter 6
+1 The Lord is my shepherd; I shall not want.
+2 He makes me lie down in green pastures. He leads me beside still waters.
+3 He restores my soul. He leads me in paths of righteousness for his name's sake.
+4 Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me.
+5 You prepare a table before me in the presence of my enemies; you anoint my head with oil; my cup overflows.
+6 Surely goodness and mercy shall follow me all the days of my life, and I shall dwell in the house of the Lord forever.

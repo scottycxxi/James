@@ -4,7 +4,6 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-//some comments cuz idk what else to add honestly
 
 namespace James
 {
@@ -21,27 +20,21 @@ namespace James
         private Verse prev = null;
         private Verse next = null;
 
+        private bool previouslyQuizzed = false;
+        private string[] previousQuizWords = new string[0];
+        private bool[] previousQuizzedWords = new bool[0];
+        private int previousQuizWordCount = 0;
+
+        private int attempts = 0;
+        private bool completed = false;
+
         public Verse(int chapterNum, int verseNum, string fullVerse, string bookName)
         {
             this.chapterNum = chapterNum;
             this.verseNum = verseNum;
             this.fullVerse = fullVerse;
             this.bookName = bookName;
-            lightVerse = fullVerse.Replace(".", "")
-                                  .Replace(",", "")
-                                  .Replace(":", "")
-                                  .Replace(";", "")
-                                  .Replace("'", "")
-                                  .Replace("\"", "")
-                                  .Replace("--", " ")
-                                  .Replace("-", "")
-                                  .Replace("?", "")
-                                  .Replace("!", "")
-                                  .Replace("(", "")
-                                  .Replace(")", "")
-                                  .ToLower()
-                                  .Trim();
-            //todo have some other check for other punctuation
+            lightVerse = CleanPunctuation(fullVerse);
         }
 
         #region Properties
@@ -56,6 +49,10 @@ namespace James
         public Verse Prev { get { return prev; } set { prev = value; } }
 
         public Verse Next { get { return next; } set { next = value; } }
+
+        public int Attempts { get { return attempts; } set { attempts = value; } }
+
+        public bool Completed { get { return completed; } set { completed = value; } }
         #endregion
 
         #region Public Methods
@@ -94,25 +91,77 @@ namespace James
 
         public void GetQuizVerse(Random randy,
                                  GameMode gameMode,
-                                 bool hardMode,
                                  out string[] quizWords,
                                  out bool[] quizzedWords,
                                  out int quizWordCount)
         {
+            if (previouslyQuizzed)
+            {
+                quizWords = previousQuizWords;
+                quizzedWords = previousQuizzedWords;
+                quizWordCount = previousQuizWordCount;
+                return;
+            }
             quizWords = lightVerse.Split(' ');
             quizzedWords = new bool[quizWords.Length];
             quizWordCount = 0;
+            int percentHelp = gameMode.PercentHelp;
             for (int i = 0; i < quizWords.Length; i++)
             {
-                if (randy.Next(0, 99) >= (int) gameMode)
+                if (randy.Next(0, 99) >= percentHelp)
                 {
                     //if the random number is higher than the game mode assistance, replace it with blank(s)
-                    int quizWordLength = hardMode ? 1 : quizWords[i].Length;
+                    //int quizWordLength = percentHelp == 0 ? 1 : quizWords[i].Length;
+                    int quizWordLength = quizWords[i].Length;
                     quizWords[i] = "_".PadRight(quizWordLength, '_');
                     quizzedWords[i] = true;
                     quizWordCount++;
                 }
             }
+            previouslyQuizzed = true;
+            previousQuizWords = quizWords;
+            previousQuizzedWords = quizzedWords;
+            previousQuizWordCount = quizWordCount;
+        }
+
+        public string GetReference()
+        {
+            return bookName + " " + chapterNum + ":" + verseNum;
+        }
+
+        public static string CleanPunctuation(string verseToClean)
+        {
+            //todo have some other check for other punctuation
+            return verseToClean.Replace(".", "")
+                               .Replace(",", "")
+                               .Replace(":", "")
+                               .Replace(";", "")
+                               .Replace("'", "")
+                               .Replace("\"", "")
+                               .Replace("“", "")
+                               .Replace("”", "")
+                               .Replace("--", " ")
+                               .Replace("-", "")
+                               .Replace("?", "")
+                               .Replace("!", "")
+                               .Replace("(", "")
+                               .Replace(")", "")
+                               .Trim();
+        }
+
+        public static string CleanMultipleSpaces(string guessToClean)
+        {
+            for (int i = guessToClean.Length - 1; i > 0; i--)
+            {
+                if (guessToClean[i] == ' ' && guessToClean[i - 1] == ' ')
+                {
+                    guessToClean = i == guessToClean.Length
+                                   ? guessToClean.Substring(0, i)
+                                   : guessToClean.Substring(0, i) + guessToClean.Substring(i + 1);
+                }
+                    
+            }
+            return guessToClean;
         }
         #endregion
 

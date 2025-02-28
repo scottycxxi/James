@@ -1,26 +1,13 @@
 ﻿/*For next time
-Verse.GetQuizVerse based on game mode
-implement hard mode
 count guesses and answers better based on game mode (shouldn't score for typing a given word) 
+make input arrow as long as verse name length so James 1:20 and ------> end at the same spot
 
-make a readme, cuz it's good to
+take out 3/3 scoring altogether
 
 long term
 store scores long term
 keep score on rounds with no help
-
-game modes
-1 - in order, prior verse context, 100% help
-2 - in order, prior verse context, 60% help
-3 - in order, prior verse context, 30% help
-4 - in order, prior verse context, 0% help, (no word lengths)
-5 - type the whole thing, hit enter after each verse, ball out
-6 - random, prior and following verse context, 60% help
-7 - random, prior and following verse context, 30% help
-8 - random, prior and following verse context, 0% help (no word lengths)
-9 - random, no context, ball out
-
-one more comment just to test pushing
+save progress mid run
 */
 namespace James
 {
@@ -32,7 +19,6 @@ namespace James
         const string pathFolder = "Scripture";
         const string pathFileName = "James.txt";
         const string chapterLineStarter = "Chapter";
-        const int verseScoreMax = 3;
 
         static void Main(string[] args)
         {
@@ -42,17 +28,24 @@ namespace James
 
             GetGameSetup(bookName,
                          out GameMode gameMode,
-                         out bool includeContext,
                          out int whichChapter,
                          out bool wantsToQuit);
             if (wantsToQuit)
                 return;
 
-            List<Verse> versesToTest = GetVersesToTest(book, whichChapter);
-            TestAllVerses(versesToTest, gameMode, includeContext, false, whichChapter);
+            List<Verse> versesToTest = GetVersesToTest(book, whichChapter, gameMode);
+            List<Verse> completedVerses = new();
+            bool retestMissedVerses = true;
+            while (versesToTest.Count > 0 && retestMissedVerses)
+            {
+                TestAllVerses(ref versesToTest, ref completedVerses, gameMode, whichChapter, out retestMissedVerses);
+                gameMode.ShowContext = versesToTest.Count > 0;
+                //always show context on retesting rounds
+                //todo, not on hardcore random mode
+            }
         }
 
-        #region Private Methods
+        #region Private Methods - Game Setup
         private static string GetRootDirectory()
         {
             string currentDirectory = Directory.GetCurrentDirectory();
@@ -104,60 +97,62 @@ namespace James
 
         private static void GetGameSetup(string bookName,
                                         out GameMode gameMode,
-                                        out bool includeContext,
                                         out int whichChapter,
                                         out bool wantsToQuit)
         {
             Console.WriteLine("Welcome to memorizing " + bookName);
-            Console.WriteLine("Game Modes: 1 - 100% | 2 - 75% | 3 - 50% | 4 - 25% | 5 - 0%");
-            Console.Write("What would you like to play? ");
-            string gameModeInput = GetValidInput("1|2|3|4|5");
-            if (gameModeInput.Equals(quitCode, StringComparison.OrdinalIgnoreCase))
-            {
-                gameMode = GameMode.gm100;
-                includeContext = false;
-                whichChapter = 0;
-                wantsToQuit = true;
-                return;
-            }
-
-            //todo hardmode
-
-            Console.WriteLine("Context: 1 - Yes | 2 - No");
-            Console.Write("Would you like to include context? ");
-            string includeContextInput = GetValidInput("1|2");
-            if (gameModeInput.Equals(quitCode, StringComparison.OrdinalIgnoreCase))
-            {
-                gameMode = GameMode.gm100;
-                includeContext = false;
-                whichChapter = 0;
-                wantsToQuit = true;
-                return;
-            }
-
-            Console.WriteLine("Chapters: 0 - All | 1 | 2 | 3 | 4 | 5");
-            //todo make this more flexible
+            Console.WriteLine("Type \"" + quitCode + "\" to quit at any time");
+            Console.WriteLine();
+            Console.WriteLine("Chapters: 0 - All | 1 | 2 | 3 | 4 | 5 | 6");
+            //todo make this more flexible for other books and zero
             Console.Write("Which chapter would you like to work on (or all)? ");
-            string whichChapterInput = GetValidInput("1|2|3|4|5");
+            string whichChapterInput = GetValidInput("1|2|3|4|5|6");
             if (whichChapterInput.Equals(quitCode, StringComparison.OrdinalIgnoreCase))
             {
-                gameMode = GameMode.gm100;
-                includeContext = false;
+                gameMode = new GameMode(GameModeType.ordered100Help); //as a default todo nullable??
                 whichChapter = 0;
                 wantsToQuit = true;
                 return;
             }
 
-            gameMode = gameModeInput switch
+            Console.WriteLine();
+            Console.WriteLine("---Game Modes---");
+            Console.WriteLine("In order");
+            Console.WriteLine("    1 - 100% help");
+            Console.WriteLine("    2 - 60% help");
+            Console.WriteLine("    3 - 30% help");
+            Console.WriteLine("    4 - 0% help");
+            Console.WriteLine("Random order with context:");
+            Console.WriteLine("    5 - 60% help");
+            Console.WriteLine("    6 - 30% help");
+            Console.WriteLine("    7 - 0% help");
+            Console.WriteLine("Full run, no context, real deal:");
+            Console.WriteLine("    8 - In order");
+            Console.WriteLine("    9 - Random");
+            Console.Write("What would you like to play? ");
+            string gameModeInput = GetValidInput("1|2|3|4|5|6|7|8|9");
+            if (gameModeInput.Equals(quitCode, StringComparison.OrdinalIgnoreCase))
             {
-                "1" => GameMode.gm100,
-                "2" => GameMode.gm75,
-                "3" => GameMode.gm50,
-                "4" => GameMode.gm25,
-                "5" => GameMode.gm0,
+                gameMode = new GameMode(GameModeType.ordered100Help); //as a default todo nullable??
+                whichChapter = 0;
+                wantsToQuit = true;
+                return;
+            }
+
+            GameModeType gameModeType = gameModeInput switch
+            {
+                "1" => GameModeType.ordered100Help,
+                "2" => GameModeType.ordered60Help,
+                "3" => GameModeType.ordered30Help,
+                "4" => GameModeType.ordered0Help,
+                "5" => GameModeType.random60Help,
+                "6" => GameModeType.random30Help,
+                "7" => GameModeType.random0Help,
+                "8" => GameModeType.orderedNoContext,
+                "9" => GameModeType.randomNoContext,
                 _ => throw new Exception("Game mode input " + gameModeInput + " not defined")
             };
-            includeContext = includeContextInput.Equals("1");
+            gameMode = new GameMode(gameModeType);
             whichChapter = int.Parse(whichChapterInput);
             wantsToQuit = false;
         }
@@ -184,7 +179,7 @@ namespace James
             return s;
         }
 
-        private static List<Verse> GetVersesToTest(List<Verse> book, int whichChapter)
+        private static List<Verse> GetVersesToTest(List<Verse> book, int whichChapter, GameMode gameMode)
         {
             List<Verse> versesToTest = new List<Verse>();
             foreach (Verse verse in book)
@@ -192,7 +187,8 @@ namespace James
                 if (whichChapter == allChapters || whichChapter == verse.ChapterNum)
                     versesToTest.Add(verse);
             }
-            Shuffle(versesToTest);
+            if (!gameMode.InOrder)
+                Shuffle(versesToTest);
             return versesToTest;
         }
 
@@ -209,75 +205,99 @@ namespace James
                 versesToTest[idxToSwap] = temp;
             }
         }
+        #endregion
 
-        private static void TestAllVerses(List<Verse> versesToTest,
+        #region Private Methods - Gameplay
+        private static void TestAllVerses(ref List<Verse> versesToTest,
+                                          ref List<Verse> completedVerses,
                                           GameMode gameMode,
-                                          bool includeContext,
-                                          bool hardMode,
-                                          int whichChapter)
+                                          int whichChapter,
+                                          out bool retestMissedVerses)
         {
-            int currentVerseCount = 0;
-            int totalVerseCount = versesToTest.Count;
+            int testedVerseCount = 0;
+            int correctVerseCount = 0;
             Random randy = new();
+            completedVerses = new();
 
-            int verseScoreTotal = 0;
-            int emergencyFixNumber = 5;
             int correctGuessesTotal = 0;
             int correctAnswersTotal = 0;
             foreach (Verse verse in versesToTest)
             {
+                //before the verse
                 Console.WriteLine();
-                Console.WriteLine($"Round {currentVerseCount + 1} of {totalVerseCount} - {bookName} {verse.ChapterNum}:{verse.VerseNum}");
-                if (includeContext && emergencyFixNumber > 4)
+                Console.WriteLine($"Round {testedVerseCount + 1} of {versesToTest.Count} - {bookName} {verse.ChapterNum}:{verse.VerseNum}");
+                if (gameMode.ShowContext)
                     Console.WriteLine(verse.GetPrevVerse(bookName));
-                verse.GetQuizVerse(randy, gameMode, hardMode,
+                //the verse
+                verse.GetQuizVerse(randy, gameMode,
                                    out string[] quizWords, out bool[] quizzedWords, out int quizWordCount);
-                Console.WriteLine($"{bookName} {verse.ChapterNum}:{verse.VerseNum} {FormatArrayWords(quizWords)}");
-                if (includeContext)
-                    Console.WriteLine(verse.GetNextVerse(bookName));
-                Console.WriteLine();
-                Console.Write("--> ");
+                string reference = verse.GetReference();
+                Console.WriteLine($"{reference} {FormatArrayWords(quizWords)}");
+                //after the verse
+                //if (gameMode.ShowContext)
+                //{
+                //    Console.WriteLine(verse.GetNextVerse(bookName));
+                //    Console.WriteLine();
+                //}
+
+                //getting the verse
+                Console.Write($"-".PadRight(reference.Length - 1, '-') + "> ");
                 string guess = Console.ReadLine();
                 if (guess.Equals(quitCode, StringComparison.OrdinalIgnoreCase))
                     break;
-                CheckLine(guess,
-                          verse,
-                          quizzedWords,
-                          quizWordCount,
-                          out int verseScore,
-                          out int correctGuesses);
-                if (verseScore == -1)
+                //scoring the verse
+                guess = Verse.CleanPunctuation(guess);
+                int correctGuesses = 0;
+                if (gameMode.PercentHelp < 100)
                 {
-                    break;
+                    CheckLine(guess,
+                              verse,
+                              quizzedWords,
+                              quizWordCount,
+                              out correctGuesses);
+                }
+
+                testedVerseCount++;
+                correctGuessesTotal += correctGuesses;
+                correctAnswersTotal += quizWordCount;
+                if (correctGuesses < quizWordCount)
+                {
+                    verse.Attempts++;
                 }
                 else
                 {
-                    currentVerseCount++;
-                    verseScoreTotal += verseScore;
-                    correctGuessesTotal += correctGuesses;
-                    correctAnswersTotal += quizWordCount;
+                    verse.Completed = true;
+                    correctVerseCount++;
                 }
             }
-            WrapUpRound(currentVerseCount,
-                        totalVerseCount,
-                        verseScoreTotal,
+
+            WrapUpRound(correctVerseCount,
+                        testedVerseCount,
                         correctGuessesTotal,
-                        correctAnswersTotal);
+                        correctAnswersTotal,
+                        out retestMissedVerses);
+            for (int i = versesToTest.Count - 1; i >= 0; i--)
+            {
+                Verse temp = versesToTest[i];
+                if (temp.Completed)
+                {
+                    versesToTest.RemoveAt(i);
+                    completedVerses.Add(temp);
+                }
+            }
         }
 
         private static void CheckLine(string guess,
                                       Verse verse,
                                       bool[] quizzedWords,
                                       int quizWordCount,
-                                      out int verseScore,
                                       out int correctGuesses)
         {
             string lightVerse = verse.LightVerse;
             if (lightVerse.Equals(guess, StringComparison.OrdinalIgnoreCase))
             {
                 string[] guessWords = guess.Split(' ');
-                Console.WriteLine($"Score: {verseScoreMax}/{verseScoreMax}, Words: {quizWordCount}/{quizWordCount}");
-                verseScore = verseScoreMax;
+                Console.WriteLine($"Words: {quizWordCount}/{quizWordCount}");
                 correctGuesses = quizWordCount;
             }
             else
@@ -289,33 +309,12 @@ namespace James
                                          out string formattedGuess,
                                          out string formattedVerse,
                                          out string formattedMistakes);
-                Console.WriteLine("+".PadRight(20, '-') + "+");
-                Console.WriteLine("Correct: " + formattedVerse);
-                Console.WriteLine("  Guess: " + formattedGuess);
-                Console.WriteLine("         " + formattedMistakes);
-
-                //shouldn't happen
-                if (formattedGuess.Length != formattedVerse.Length
-                    || formattedVerse.Length != formattedMistakes.Length)
-                {
-                    Console.WriteLine("Whoops, those aren't all the same length...");
-                    Console.WriteLine("Guess: " + guess);
-                    Console.WriteLine("Lightverse: " + lightVerse);
-                }
-
-                Console.WriteLine("Score: 3 - Perfect | 2 - Really good | 1 - Getting there | 0 - Needs work");
-                Console.Write("How would you score that? ");
-                string verseScoreInput = GetValidInput("1|2|3|0");
-                if (verseScoreInput.Equals(quitCode, StringComparison.OrdinalIgnoreCase))
-                {
-                    verseScore = -1;
-                }
-                else
-                {
-                    Console.WriteLine("+".PadRight(20, '-') + "+");
-                    Console.WriteLine($"Score: {verseScoreInput}/{verseScoreMax}, Words: {correctGuesses}/{quizWordCount}");
-                    verseScore = int.Parse(verseScoreInput);
-                }
+                Console.WriteLine("+".PadRight(20, '-') + ">");
+                Console.WriteLine("|Correct: " + formattedVerse);
+                Console.WriteLine("|  Guess: " + formattedGuess);
+                Console.WriteLine("|         " + formattedMistakes);
+                Console.WriteLine($"|Words: {correctGuesses}/{quizWordCount}");
+                Console.WriteLine("+".PadRight(20, '-') + ">");
             }
         }
 
@@ -327,29 +326,31 @@ namespace James
                                                      out string formattedVerse,
                                                      out string formattedMistakes)
         {
-            string[] guessWords = guess.Split(' ');
-            string[] verseWords = lightVerse.Split(' ');
+            guess = Verse.CleanMultipleSpaces(guess);
+            string[] guessWords = guess.ToLower().Split(' ');
+            string[] verseWords = lightVerse.ToLower().Split(' ');
             string[] mistakeWords = new string[Math.Max(guessWords.Length, verseWords.Length)];
             correctGuesses = 0;
             for (int i = 0; i < guessWords.Length; i++)
             {
                 string guessWord = guessWords[i];
                 string verseWord = "";
-                if (verseWords.Length >= i)
+                if (verseWords.Length > i)
                 {
                     verseWord = verseWords[i];
                 }
                 int wordLength = Math.Max(guessWord.Length, verseWord.Length);
 
+                //only gives points for correct words if quizzed and same, only show mistakes for wrong words if quizzed
                 if (guessWord.Equals(verseWord, StringComparison.OrdinalIgnoreCase))
                 {
                     mistakeWords[i] = "".PadRight(wordLength);
-                    correctGuesses += (bool)quizzedWords?[i] ? 1 : 0;
-                    //todo maybe bad vibes
+                    correctGuesses += (bool)quizzedWords[i] ? 1 : 0;
                 }
                 else
                 {
-                    mistakeWords[i] = "".PadRight(wordLength, 'x');
+                    char padChar = (bool)quizzedWords[i] ? 'x' : ' ';
+                    mistakeWords[i] = "".PadRight(wordLength, padChar);
                     guessWords[i] = guessWord.PadRight(wordLength);
                     verseWords[i] = verseWord.PadRight(wordLength);
                 }
@@ -378,17 +379,27 @@ namespace James
             return formattedWords;
         }
 
-        private static void WrapUpRound(int currentVerseCount,
-                                        int totalVerseCount,
-                                        int verseScoreTotal,
+        private static void WrapUpRound(int correctVerseCount,
+                                        int testedVerseCount,
                                         int correctGuessesTotal,
-                                        int correctAnswersTotal)
+                                        int correctAnswersTotal,
+                                        out bool retestMissedVerses)
         {
-            Console.WriteLine($"Verses tested: {currentVerseCount}/{totalVerseCount}");
-            Console.WriteLine($"Overall score: {verseScoreTotal}/{currentVerseCount * verseScoreMax}");
-            Console.WriteLine($"Words guessed: {correctGuessesTotal}/{correctAnswersTotal}");
+            //todo chapters tested?
+            Console.WriteLine();
+            Console.WriteLine($"Verses perfect: {correctVerseCount}/{testedVerseCount}");
+            Console.WriteLine($"Words correct: {correctGuessesTotal}/{correctAnswersTotal}");
             Console.WriteLine("Nice work!");
-            //write to file somehow??
+            retestMissedVerses = false;
+            if (correctVerseCount < testedVerseCount)
+            {
+                Console.WriteLine("Would you like to retest the verses you missed? (y/n): ");
+                string retest = GetValidInput("y|n");
+                retestMissedVerses = retest.Equals("y", StringComparison.OrdinalIgnoreCase);
+                if (retestMissedVerses)
+                    Console.Clear();
+            }
+            //todo write to file somehow??
         }
         #endregion
     }
